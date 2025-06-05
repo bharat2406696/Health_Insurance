@@ -14,14 +14,16 @@
     <div class="col-md-6">
         @* Use a column to limit the form width *@
         @* Form for updating claim status. Posts data to the UpdateClaimStatus action. *@
-        <form asp-action="UpdateClaimStatus">
+        <form asp-action="UpdateClaimStatus" method="post">
+            @* Ensure method="post" is explicit *@
             @* Hidden field for CSRF protection *@
             @Html.AntiForgeryToken()
 
             @* Hidden input for the ClaimId, needed to identify which claim is being updated *@
-            <input type="hidden" asp-for="ClaimId" />
+            <input type="hidden" name="id" value="@Model.ClaimId" /> @* Changed to name="id" to match controller parameter *@
 
             @* Validation summary with Bootstrap text-danger class *@
+            @* We might still get errors here if the dropdown is not selected *@
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div> @* Added margin-bottom *@
 
             @* Display current claim details (read-only) for context *@
@@ -39,7 +41,8 @@
             </div>
             <div class="form-group mb-3">
                 <label asp-for="ClaimReason" class="form-label"></label>
-                <textarea asp-for="ClaimReason" class="form-control"></textarea> @* Removed readonly attribute *//*>
+                @* ClaimReason is readonly. No need for data-val attributes or validation span. *@
+                <textarea asp-for="ClaimReason" class="form-control" readonly></textarea>
             </div>
             <div class="form-group mb-3">
                 <label class="form-label">Current Status:</label>
@@ -52,7 +55,8 @@
             <div class="form-group mb-3">
                 <label asp-for="ClaimStatus" class="form-label">Select New Status:</label> @* Use asp-for for correct label text *@
                 @* Changed id to match asp-for for consistency. This will render name="ClaimStatus" *@
-                <select id="ClaimStatus" asp-for="ClaimStatus" class="form-control" asp-items="ViewBag.Statuses">
+                <select id="ClaimStatus" name="ClaimStatus" class="form-control" asp-items="ViewBag.Statuses">
+                    @* Changed asp-for to name for direct binding to string param *@
                     <option value="">-- Select New Status --</option> @* Optional: Add a default empty option *@
                 </select>
                 @* Displays validation errors for ClaimStatus with Bootstrap text-danger *@
@@ -77,5 +81,4 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
-
 

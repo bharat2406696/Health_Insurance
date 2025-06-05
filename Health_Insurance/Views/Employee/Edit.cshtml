@@ -1,5 +1,4 @@
-﻿@model Health_Insurance.Models.Employee
-@* Ensure the model namespace is correct based on your project name *@
+﻿@model Health_Insurance.Models.EmployeeEditViewModel
 
 @{
     ViewData["Title"] = "Edit Employee";
@@ -69,6 +68,23 @@
                 <span asp-validation-for="OrganizationId" class="text-danger"></span>
             </div>
 
+            @* --- Username Field --- *@
+            <div class="form-group mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <input asp-for="Username" class="form-control" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+            @* --- End Username Field --- *@
+
+            @* --- Password Field (allowing optional change) --- *@
+            @* CRITICAL FIX: Add data-val="false" to explicitly disable client-side validation for this field *@
+            <div class="form-group mb-3">
+                <label asp-for="Password" class="form-label"></label> @* Label now comes from DisplayName attribute *@
+                <input asp-for="Password" type="password" class="form-control" placeholder="Enter new password (optional)" data-val="false" /> @* Added data-val="false" *@
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            @* --- End Password Field --- *@
+
             <div class="form-group mt-3">
                 @* Added margin-top to button *@
                 <input type="submit" value="Save" class="btn btn-primary" /> @* Use Bootstrap button class *@
@@ -85,8 +101,11 @@
 
 @section Scripts {
     @{
+        // Keep this line, as we are now handling the specific field validation with data-val="false"
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
+
+
 
 

@@ -1,7 +1,7 @@
 ﻿// Models/Employee.cs
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Mvc.ModelBinding; // Needed for [BindNever]
+using Microsoft.AspNetCore.Mvc.ModelBinding; // Required for [BindNever]
 
 namespace Health_Insurance.Models // Ensure this namespace is correct based on your project name
 {
@@ -28,20 +28,21 @@ namespace Health_Insurance.Models // Ensure this namespace is correct based on y
         public string Designation { get; set; }
 
         // Foreign Key to the Organization table
+        [Required(ErrorMessage = "Organization is required.")] // Ensure this is present
         public int OrganizationId { get; set; }
 
         // Navigation property to the related Organization
         [ForeignKey("OrganizationId")] // Specifies the foreign key property
-        [BindNever] // Add this attribute to prevent model binding for this property
-        public virtual Organization Organization { get; set; }
+        [BindNever] // ADD THIS ATTRIBUTE! Tells model binder to ignore this property from form data
+        public virtual Organization? Organization { get; set; }
 
         // --- Authentication Fields for Employee Login ---
-        [Required]
+        [Required(ErrorMessage = "Username is required.")] // Username is still required
         [StringLength(50)]
         public string Username { get; set; }
 
-        [Required]
-        [StringLength(256)] // Store hashed passwords, so a longer length is needed
+        // Password hash. Not [Required] on the model, but handled for initial creation in controller.
+        [StringLength(256)]
         public string PasswordHash { get; set; }
         // --- End Authentication Fields ---
 

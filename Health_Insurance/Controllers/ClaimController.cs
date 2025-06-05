@@ -252,46 +252,68 @@ namespace Health_Insurance.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateClaimStatus(int id, [Bind("ClaimId,ClaimStatus")] Health_Insurance.Models.Claim claim) // Explicitly qualify your model's Claim
+        // MODIFIED: Accept ClaimId and newStatus directly.
+        public async Task<IActionResult> UpdateClaimStatus(int id, string ClaimStatus) // Changed parameter to string ClaimStatus
         {
-            if (id != claim.ClaimId)
-            {
-                return NotFound();
-            }
+            // No need for ModelState.IsValid check on a whole Claim object here
+            // because we are only binding id and ClaimStatus.
 
-            if (ModelState.IsValid)
+            try
             {
-                try
-                {
-                    var success = await _claimService.UpdateClaimStatusAsync(claim.ClaimId, claim.ClaimStatus);
+                // Fetch the existing claim from the database
+                var existingClaim = await _context.Claims.FindAsync(id);
 
-                    if (success)
-                    {
-                        return RedirectToAction(nameof(GetClaimDetails), new { id = claim.ClaimId });
-                    }
-                    else
-                    {
-                        ViewBag.ErrorMessage = "Failed to update claim status. Please check the Claim ID or status.";
-                        var statuses = new List<string> { "SUBMITTED", "APPROVED", "REJECTED" };
-                        ViewBag.Statuses = new SelectList(statuses, claim.ClaimStatus);
-                        return View(claim);
-                    }
-                }
-                catch (DbUpdateConcurrencyException)
+                if (existingClaim == null)
                 {
-                    if (!ClaimExists(claim.ClaimId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
+                }
+
+                // Update ONLY the status
+                existingClaim.ClaimStatus = ClaimStatus; // Update status with the incoming value
+
+                // No need to use _claimService.UpdateClaimStatusAsync(claim.ClaimId, claim.ClaimStatus)
+                // directly if _context.Update and SaveChangesAsync is used.
+                // If your service method specifically does an update, we can call it.
+                // Assuming _claimService.UpdateClaimStatusAsync handles the actual database update
+                // with the specific ID and status:
+                var success = await _claimService.UpdateClaimStatusAsync(id, ClaimStatus);
+
+
+                if (success)
+                {
+                    return RedirectToAction(nameof(GetClaimDetails), new { id = id }); // Redirect back to details, or ListAllClaims
+                }
+                else
+                {
+                    // If service returns false, it means update failed somehow.
+                    ViewBag.ErrorMessage = "Failed to update claim status. Please check the Claim ID or status.";
+                    var statuses = new List<string> { "SUBMITTED", "APPROVED", "REJECTED" };
+                    ViewBag.Statuses = new SelectList(statuses, ClaimStatus); // Pass the attempted status back
+                    // You need to re-fetch the claim details to display other fields if validation fails
+                    var claimToReturn = await _claimService.GetClaimDetailsAsync(id);
+                    return View(claimToReturn);
                 }
             }
-            var statusesInvalid = new List<string> { "SUBMITTED", "APPROVED", "REJECTED" };
-            ViewBag.Statuses = new SelectList(statusesInvalid, claim.ClaimStatus);
-            return View(claim);
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ClaimExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw; // Re-throw the exception for proper error handling
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (e.g., using _logger)
+                ViewBag.ErrorMessage = $"An error occurred: {ex.Message}";
+                var statuses = new List<string> { "SUBMITTED", "APPROVED", "REJECTED" };
+                ViewBag.Statuses = new SelectList(statuses, ClaimStatus);
+                var claimToReturn = await _claimService.GetClaimDetailsAsync(id);
+                return View(claimToReturn);
+            }
         }
 
         // Helper method to check if a claim exists

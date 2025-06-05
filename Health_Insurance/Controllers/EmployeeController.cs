@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Authorization; // Add this using statement
+using Microsoft.AspNetCore.Authorization;
+using BCrypt.Net; // Add this using statement for password hashing
 
 namespace Health_Insurance.Controllers
 {
@@ -58,6 +59,8 @@ namespace Health_Insurance.Controllers
         // POST: /Employee/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // Removed "Organization" from the [Bind] attribute.
+        // We will manually load the Organization object after model binding.
         public async Task<IActionResult> Create([Bind("Name,Email,Phone,Address,Designation,OrganizationId,Username,PasswordHash")] Employee employee)
         {
             // Hash the password before saving a new employee
@@ -65,13 +68,40 @@ namespace Health_Insurance.Controllers
             {
                 employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(employee.PasswordHash);
             }
-
-            if (ModelState.IsValid)
+            else
             {
+                // If PasswordHash is empty, and it's required for new user creation,
+                // add a model error.
+                ModelState.AddModelError(nameof(employee.PasswordHash), "Password is required for new employees.");
+            }
+
+            // Check if OrganizationId is valid before proceeding
+            // This is a redundant check if OrganizationId is [Required] and ModelState.IsValid is used,
+            // but provides clarity.
+            if (employee.OrganizationId <= 0)
+            {
+                ModelState.AddModelError(nameof(employee.OrganizationId), "Please select a valid organization.");
+            }
+
+            if (ModelState.IsValid) // This will check all [Required] fields, excluding the Organization navigation property
+            {
+                // Manually retrieve and assign the Organization navigation property
+                // This prevents model binding from trying to create or validate the complex object directly.
+                var organization = await _context.Organizations.FindAsync(employee.OrganizationId);
+                if (organization == null)
+                {
+                    ModelState.AddModelError(nameof(employee.OrganizationId), "Selected organization not found.");
+                    ViewData["OrganizationId"] = new SelectList(_context.Organizations, "OrganizationId", "OrganizationName", employee.OrganizationId);
+                    return View(employee);
+                }
+                employee.Organization = organization; // Assign the loaded organization
+
                 _context.Add(employee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
+            // If ModelState is not valid, re-populate ViewData for dropdown and return view
             ViewData["OrganizationId"] = new SelectList(_context.Organizations, "OrganizationId", "OrganizationName", employee.OrganizationId);
             return View(employee);
         }
@@ -89,49 +119,80 @@ namespace Health_Insurance.Controllers
             {
                 return NotFound();
             }
+
+            // Map Employee model to EmployeeEditViewModel for the view
+            var viewModel = new EmployeeEditViewModel
+            {
+                EmployeeId = employee.EmployeeId,
+                Name = employee.Name,
+                Email = employee.Email,
+                Phone = employee.Phone,
+                Address = employee.Address,
+                Designation = employee.Designation,
+                OrganizationId = employee.OrganizationId,
+                Username = employee.Username,
+                // Do NOT set Password here, as it's sensitive and not stored in plain text.
+                // The ViewModel's Password property is for new input only.
+                Password = null // Ensure it's empty so the field is blank for optional update
+            };
+
             ViewData["OrganizationId"] = new SelectList(_context.Organizations, "OrganizationId", "OrganizationName", employee.OrganizationId);
-            return View(employee);
+            return View(viewModel); // Pass the ViewModel to the view
         }
 
         // POST: /Employee/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("EmployeeId,Name,Email,Phone,Address,Designation,OrganizationId,Username,PasswordHash")] Employee employee)
+        public async Task<IActionResult> Edit(int id, EmployeeEditViewModel viewModel) // Accept EmployeeEditViewModel
         {
-            if (id != employee.EmployeeId)
+            if (id != viewModel.EmployeeId)
             {
                 return NotFound();
             }
 
-            // Important: When editing, if the password field is submitted (e.g., if you add it to the form),
-            // you should hash it only if it's changed. Otherwise, you might overwrite with an empty or plain password.
-            // A common pattern is to have a separate "Change Password" action or only bind PasswordHash if it's explicitly provided.
-            // For now, if PasswordHash is provided, re-hash it.
-            if (!string.IsNullOrEmpty(employee.PasswordHash))
+            // Manually remove Password from ModelState validation if it's empty
+            // This is crucial because EmployeeEditViewModel.Password is NOT [Required]
+            // but client-side or other validation might still flag it if it's the only issue.
+            if (ModelState.ContainsKey(nameof(viewModel.Password)) && string.IsNullOrEmpty(viewModel.Password))
             {
-                employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(employee.PasswordHash);
+                ModelState.Remove(nameof(viewModel.Password));
             }
-            else
-            {
-                // If password is not provided in the form, load the existing hashed password from DB
-                var existingEmployee = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.EmployeeId == id);
-                if (existingEmployee != null)
-                {
-                    employee.PasswordHash = existingEmployee.PasswordHash;
-                }
-            }
-
 
             if (ModelState.IsValid)
             {
+                // Retrieve the existing employee from the database
+                var employeeToUpdate = await _context.Employees.FindAsync(id);
+
+                if (employeeToUpdate == null)
+                {
+                    return NotFound(); // Employee not found in DB
+                }
+
+                // Update properties from the ViewModel to the existing employee entity
+                employeeToUpdate.Name = viewModel.Name;
+                employeeToUpdate.Email = viewModel.Email;
+                employeeToUpdate.Phone = viewModel.Phone;
+                employeeToUpdate.Address = viewModel.Address;
+                employeeToUpdate.Designation = viewModel.Designation;
+                employeeToUpdate.OrganizationId = viewModel.OrganizationId;
+                employeeToUpdate.Username = viewModel.Username; // Update username if changed
+
+                // Only update PasswordHash if a new password was provided in the ViewModel
+                if (!string.IsNullOrEmpty(viewModel.Password))
+                {
+                    employeeToUpdate.PasswordHash = BCrypt.Net.BCrypt.HashPassword(viewModel.Password);
+                }
+                // If viewModel.Password is null/empty, the existing employeeToUpdate.PasswordHash remains unchanged.
+
+
                 try
                 {
-                    _context.Update(employee);
+                    _context.Update(employeeToUpdate); // Attach and mark as modified
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EmployeeExists(employee.EmployeeId))
+                    if (!EmployeeExists(viewModel.EmployeeId)) // Use viewModel.EmployeeId here
                     {
                         return NotFound();
                     }
@@ -142,8 +203,10 @@ namespace Health_Insurance.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["OrganizationId"] = new SelectList(_context.Organizations, "OrganizationId", "OrganizationName", employee.OrganizationId);
-            return View(employee);
+
+            // If ModelState is not valid, re-populate ViewData for dropdown and return view
+            ViewData["OrganizationId"] = new SelectList(_context.Organizations, "OrganizationId", "OrganizationName", viewModel.OrganizationId);
+            return View(viewModel); // Pass the ViewModel back to the view
         }
 
         // GET: /Employee/Delete/5
@@ -186,6 +249,3 @@ namespace Health_Insurance.Controllers
         }
     }
 }
-
-
-
