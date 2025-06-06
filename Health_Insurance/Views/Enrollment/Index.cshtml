@@ -2,128 +2,82 @@
 @* Ensure the model namespace is correct based on your project name *@
 
 @{
-    ViewData["Title"] = "Available Policies";
+    ViewData["Title"] = "Available Policies for Enrollment";
 }
 
 <h1 class="mb-4">Available Policies for Enrollment</h1>
 
-@* Employee Selection Dropdown *@
-@* Use Bootstrap form-group and col-md-4 for layout and styling *@
-<div class="form-group col-md-4 mb-3">
-    @* Added margin-bottom *@
-    <label for="employeeSelect" class="form-label">Select Employee:</label> @* Use form-label for Bootstrap styling *@
-    @* Use asp-items to populate the dropdown from ViewBag.EmployeeList *@
-    <select id="employeeSelect" class="form-control" asp-items="ViewBag.EmployeeList">
-        <option value="">-- Select Employee --</option> @* Optional: Add a default empty option *@
-    </select>
-</div>
+<p class="lead">
+    @if (ViewBag.IsEmployee != null && ViewBag.IsEmployee)
+    {
+        <span>Logged in as: <strong>@ViewBag.LoggedInEmployeeName</strong></span>
+    }
+    else
+    {
+        <span>You are viewing policies for enrollment. Select an employee to proceed.</span>
+    }
+</p>
 
+@* Display any error messages *@
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @ViewBag.ErrorMessage
+    </div>
+}
 
-@* Apply Bootstrap table classes for styling *@
-<table class="table table-striped table-bordered table-hover mt-3">
-    @* Added margin-top for spacing *@
-    <thead>
+<table class="table table-striped table-hover mt-4">
+    <thead class="table-dark">
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.PolicyName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CoverageAmount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PremiumAmount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PolicyType)
-            </th>
-            <th></th> @* Column for action links (Enroll) *@
+            <th>@Html.DisplayNameFor(model => model.PolicyName)</th>
+            <th>@Html.DisplayNameFor(model => model.CoverageAmount)</th>
+            <th>@Html.DisplayNameFor(model => model.PremiumAmount)</th>
+            <th>@Html.DisplayNameFor(model => model.PolicyType)</th>
+            <th>Action</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
+                <td>@Html.DisplayFor(modelItem => item.PolicyName)</td>
+                <td>@Html.DisplayFor(modelItem => item.CoverageAmount)</td>
+                <td>@Html.DisplayFor(modelItem => item.PremiumAmount)</td>
+                <td>@Html.DisplayFor(modelItem => item.PolicyType)</td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.PolicyName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.CoverageAmount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.PremiumAmount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.PolicyType)
-                </td>
-                <td>
-                    @* Link to the Enroll action. This link will be updated by JavaScript. *@
-                    @* We add a data-employee-id attribute to store the employee ID *@
-                    @* The initial value can be empty or a default *@
-                    @* Apply Bootstrap button classes to the link *@
-                    <a href="#" class="enroll-link btn btn-primary btn-sm"
-                       data-policy-id="@item.PolicyId"
-                       data-employee-id="">Enroll (Select Employee)</a>
+                    @* The form now handles conditional employee selection based on role *@
+                    <form asp-controller="Enrollment" asp-action="Enroll" method="get">
+                        <input type="hidden" name="policyId" value="@item.PolicyId" />
+
+                        @if (ViewBag.IsEmployee != null && ViewBag.IsEmployee)
+                        {
+                            @* If employee, use hidden input for their own ID *@
+                            <input type="hidden" name="employeeId" value="@ViewBag.LoggedInEmployeeId" />
+                            <button type="submit" class="btn btn-sm btn-primary">Enroll Me</button>
+                        }
+                        else
+                        {
+                            @* If admin, show dropdown to select employee *@
+                            <div class="input-group">
+                                <select name="employeeId" class="form-select form-select-sm me-2" asp-items="ViewBag.EmployeeList" required>
+                                    <option value="">Select Employee</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-success">Enroll Selected</button>
+                            </div>
+                        }
+                    </form>
                 </td>
             </tr>
         }
     </tbody>
 </table>
 
-@* Display error message with Bootstrap alert classes *@
-@if (ViewBag.ErrorMessage != null)
-{
-    <div class="alert alert-danger mt-3">
-        @ViewBag.ErrorMessage
-    </div>
-}
-
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-
-    @* Ensure jQuery is loaded in your _Layout.cshtml or here *@
-    @* <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> *@
-
-    <script>
-        $(document).ready(function () {
-            // Get references to the dropdown and all enroll links
-            var employeeSelect = $('#employeeSelect');
-            var enrollLinks = $('.enroll-link');
-
-            // Function to update the href and text of the enroll links
-            function updateEnrollLinks() {
-                var selectedEmployeeId = employeeSelect.val(); // Get the selected employee ID
-                var selectedEmployeeName = employeeSelect.find('option:selected').text(); // Get the selected employee text (name)
-
-                // Iterate over each enroll link
-                enrollLinks.each(function () {
-                    var link = $(this);
-                    var policyId = link.data('policy-id'); // Get the policy ID from the data attribute
-
-                    if (selectedEmployeeId && selectedEmployeeId !== "") {
-                        // If an employee is selected, update the href and text
-                        link.attr('href', '/Enrollment/Enroll?policyId=' + policyId + '&employeeId=' + selectedEmployeeId);
-                        // Display the selected employee's name in the link text
-                        link.text('Enroll (' + selectedEmployeeName + ')');
-                        link.removeClass('disabled'); // Enable the link
-                    } else {
-                        // If no employee is selected, disable the link and set placeholder text
-                        link.attr('href', '#'); // Set href to # or remove it
-                        link.text('Enroll (Select Employee)'); // Reset link text
-                        link.addClass('disabled'); // Visually indicate it's disabled
-                    }
-                });
-            }
-
-            // Call the function initially to set links based on the default dropdown value
-            updateEnrollLinks();
-
-            // Attach the update function to the change event of the dropdown
-            employeeSelect.on('change', updateEnrollLinks);
-        });
-    </script>
 }
+
 
 
 

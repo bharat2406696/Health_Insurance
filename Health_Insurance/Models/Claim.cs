@@ -16,7 +16,7 @@ namespace Health_Insurance.Models // Ensure this namespace is correct
 
         [ForeignKey("EnrollmentId")]
         [BindNever] // Prevents model binding from the form, loaded separately
-        public virtual Enrollment Enrollment { get; set; }
+        public virtual Enrollment? Enrollment { get; set; }
 
         [Required(ErrorMessage = "Claim amount is required.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Claim amount must be greater than 0.")]

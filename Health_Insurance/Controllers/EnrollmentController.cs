@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Authorization; // Add this using statement
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims; // Needed for User.FindFirst
+using System.Collections.Generic; // Needed for List<T>
 
 namespace Health_Insurance.Controllers
 {
@@ -32,10 +33,42 @@ namespace Health_Insurance.Controllers
         {
             var policies = await _enrollmentService.GetAllPoliciesAsync();
 
-            // Fetch all employees to populate the dropdown for Admin to select
-            // For an Employee, this dropdown might be hidden or pre-selected.
-            var employees = await _context.Employees.ToListAsync();
-            ViewBag.EmployeeList = new SelectList(employees, "EmployeeId", "Name");
+            // --- Logic for Employee/Admin specific dropdowns ---
+            if (User.IsInRole("Employee"))
+            {
+                var loggedInEmployeeIdClaim = User.FindFirst("EmployeeId")?.Value;
+                if (loggedInEmployeeIdClaim != null && int.TryParse(loggedInEmployeeIdClaim, out int actualEmployeeId))
+                {
+                    // For an Employee, only pass their own ID for implicit use.
+                    // The dropdown will be hidden in the view.
+                    ViewBag.IsEmployee = true;
+                    ViewBag.LoggedInEmployeeId = actualEmployeeId;
+                    var employee = await _context.Employees.FindAsync(actualEmployeeId);
+                    ViewBag.LoggedInEmployeeName = employee?.Name;
+                    // No need to populate a SelectList for 'all employees' for the employee view.
+                }
+                else
+                {
+                    // Fallback for an authenticated employee without an EmployeeId claim (shouldn't happen)
+                    ViewBag.IsEmployee = true;
+                    ViewBag.LoggedInEmployeeId = 0; // Or handle as an error
+                    ViewBag.LoggedInEmployeeName = "Unknown Employee (Error)";
+                }
+            }
+            else if (User.IsInRole("Admin"))
+            {
+                // For an Admin, fetch all employees to populate the dropdown
+                ViewBag.IsEmployee = false;
+                var employees = await _context.Employees.ToListAsync();
+                ViewBag.EmployeeList = new SelectList(employees, "EmployeeId", "Name");
+            }
+            else
+            {
+                // Should not be reached due to [Authorize]
+                ViewBag.IsEmployee = false;
+                ViewBag.EmployeeList = new SelectList(new List<Employee>()); // Empty list
+            }
+            // --- End Logic for Employee/Admin specific dropdowns ---
 
             return View(policies);
         }
@@ -137,8 +170,7 @@ namespace Health_Insurance.Controllers
                 var loggedInEmployeeId = User.FindFirst("EmployeeId")?.Value;
                 if (loggedInEmployeeId == null || !int.TryParse(loggedInEmployeeId, out int actualEmployeeId) || actualEmployeeId != employeeId)
                 {
-                    // Attempt by an Employee to calculate premium for someone else
-                    return Forbid();
+                    return Forbid(); // Attempt by an Employee to calculate for someone else
                 }
             }
 
@@ -147,4 +179,5 @@ namespace Health_Insurance.Controllers
         }
     }
 }
+
 

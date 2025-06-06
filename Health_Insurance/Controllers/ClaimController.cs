@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims; // Still needed for ClaimTypes, ClaimsPrincipal, etc.
+using System; // For generic Exception handling
 
 namespace Health_Insurance.Controllers
 {
@@ -120,12 +121,16 @@ namespace Health_Insurance.Controllers
         // POST: /Claim/SubmitClaim
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SubmitClaim([Bind("EnrollmentId,ClaimAmount,ClaimReason,ClaimDate")] Health_Insurance.Models.Claim claim) // Explicitly qualify your model's Claim
+        // Added ClaimId to bind list (though it's usually 0 for new records, it's safer)
+        public async Task<IActionResult> SubmitClaim([Bind("ClaimId,EnrollmentId,ClaimAmount,ClaimReason,ClaimDate")] Health_Insurance.Models.Claim claim)
         {
+            // CRITICAL FIX: Set ClaimStatus to SUBMITTED before ModelState.IsValid check
+            // Because ClaimStatus is [Required] in the model, and not bound from the form.
+            claim.ClaimStatus = "SUBMITTED";
+
             // Validate that the submitted EnrollmentId belongs to the logged-in employee if they are an Employee
             if (User.IsInRole("Employee"))
             {
-                // Explicitly qualify System.Security.Claims.Claim
                 System.Security.Claims.Claim employeeIdClaim = User.FindFirst("EmployeeId");
                 if (employeeIdClaim == null || !int.TryParse(employeeIdClaim.Value, out int actualEmployeeId))
                 {
@@ -141,7 +146,7 @@ namespace Health_Insurance.Controllers
                 }
             }
 
-            if (ModelState.IsValid)
+            if (ModelState.IsValid) // This should now be true if other fields are valid
             {
                 var success = await _claimService.SubmitClaimAsync(claim);
 
@@ -155,6 +160,7 @@ namespace Health_Insurance.Controllers
                     return await RePopulateSubmitClaimDropdown(claim);
                 }
             }
+            // If ModelState is not valid, re-populate dropdowns and return view
             return await RePopulateSubmitClaimDropdown(claim);
         }
 
@@ -163,11 +169,9 @@ namespace Health_Insurance.Controllers
         {
             if (User.IsInRole("Employee"))
             {
-                // Explicitly qualify System.Security.Claims.Claim
                 System.Security.Claims.Claim employeeIdClaim = User.FindFirst("EmployeeId");
                 if (employeeIdClaim == null || !int.TryParse(employeeIdClaim.Value, out int actualEmployeeId))
                 {
-                    // This case should ideally be caught earlier by Forbid()
                     return Forbid();
                 }
                 var enrollments = await _context.Enrollments
@@ -213,7 +217,6 @@ namespace Health_Insurance.Controllers
             // Enforce that an Employee can only view their own claims
             if (User.IsInRole("Employee"))
             {
-                // Explicitly qualify System.Security.Claims.Claim
                 System.Security.Claims.Claim employeeIdClaim = User.FindFirst("EmployeeId");
                 if (employeeIdClaim == null || !int.TryParse(employeeIdClaim.Value, out int actualEmployeeId) || claim.Enrollment.EmployeeId != actualEmployeeId)
                 {
@@ -252,12 +255,8 @@ namespace Health_Insurance.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin")]
-        // MODIFIED: Accept ClaimId and newStatus directly.
         public async Task<IActionResult> UpdateClaimStatus(int id, string ClaimStatus) // Changed parameter to string ClaimStatus
         {
-            // No need for ModelState.IsValid check on a whole Claim object here
-            // because we are only binding id and ClaimStatus.
-
             try
             {
                 // Fetch the existing claim from the database
@@ -271,13 +270,7 @@ namespace Health_Insurance.Controllers
                 // Update ONLY the status
                 existingClaim.ClaimStatus = ClaimStatus; // Update status with the incoming value
 
-                // No need to use _claimService.UpdateClaimStatusAsync(claim.ClaimId, claim.ClaimStatus)
-                // directly if _context.Update and SaveChangesAsync is used.
-                // If your service method specifically does an update, we can call it.
-                // Assuming _claimService.UpdateClaimStatusAsync handles the actual database update
-                // with the specific ID and status:
                 var success = await _claimService.UpdateClaimStatusAsync(id, ClaimStatus);
-
 
                 if (success)
                 {
@@ -285,11 +278,9 @@ namespace Health_Insurance.Controllers
                 }
                 else
                 {
-                    // If service returns false, it means update failed somehow.
                     ViewBag.ErrorMessage = "Failed to update claim status. Please check the Claim ID or status.";
                     var statuses = new List<string> { "SUBMITTED", "APPROVED", "REJECTED" };
                     ViewBag.Statuses = new SelectList(statuses, ClaimStatus); // Pass the attempted status back
-                    // You need to re-fetch the claim details to display other fields if validation fails
                     var claimToReturn = await _claimService.GetClaimDetailsAsync(id);
                     return View(claimToReturn);
                 }
@@ -302,7 +293,7 @@ namespace Health_Insurance.Controllers
                 }
                 else
                 {
-                    throw; // Re-throw the exception for proper error handling
+                    throw;
                 }
             }
             catch (Exception ex)
