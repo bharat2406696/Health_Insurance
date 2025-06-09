@@ -1,39 +1,43 @@
 // Program.cs
-using Health_Insurance.Data;
-using Health_Insurance.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Health_Insurance.Data; // Ensure this namespace is correct for ApplicationDbContext
+using Health_Insurance.Services; // Ensure this namespace is correct for your Services (IUserService, UserService, IClaimService, ClaimService, IEnrollmentService, EnrollmentService, IPremiumCalculatorService, PremiumCalculatorService, IReportService, ReportService)
+using Microsoft.EntityFrameworkCore; // For UseSqlServer
+using Microsoft.AspNetCore.Authentication.Cookies; // For CookieAuthenticationDefaults
+using Microsoft.AspNetCore.Authorization; // For Authorization policies (if needed later)
+using Microsoft.AspNetCore.Mvc.Authorization; // For AuthorizeFilter (if needed later)
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Configure the database context to use SQL Server
+// Configure SQL Server database connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register your custom UserService for dependency injection
-builder.Services.AddScoped<IUserService, UserService>();
-
-// Register other services (ensure these are already present)
-builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IPremiumCalculatorService, PremiumCalculatorService>();
-builder.Services.AddScoped<IClaimService, ClaimService>();
-
-
-// --- Configure Authentication Services ---
+// Configure Authentication (Cookie-based)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login"; // Specifies the path to the login page
-        options.LogoutPath = "/Account/Logout"; // Specifies the path to the logout action
-        options.AccessDeniedPath = "/Account/AccessDenied"; // Specifies the path for access denied
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie expiration time
-        options.SlidingExpiration = true; // Renew cookie if half of expiration time has passed
+        options.LoginPath = "/Account/Login"; // Path to your login page
+        options.LogoutPath = "/Account/Logout"; // Path to your logout action
+        options.AccessDeniedPath = "/Account/AccessDenied"; // Path for access denied
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie expiration
+        options.SlidingExpiration = true; // Renew cookie on activity
     });
-// --- End Configure Authentication Services ---
 
+// Register your custom services for Dependency Injection
+// User Service
+builder.Services.AddScoped<IUserService, UserService>();
+// Claim Service
+builder.Services.AddScoped<IClaimService, ClaimService>();
+// Enrollment Service
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+// Premium Calculator Service
+builder.Services.AddScoped<IPremiumCalculatorService, PremiumCalculatorService>();
+// --- NEW: Register Report Service ---
+builder.Services.AddScoped<IReportService, ReportService>();
+// --- END NEW ---
 
 var app = builder.Build();
 
@@ -50,16 +54,15 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// --- Add Authentication and Authorization Middleware ---
-// These must be placed between UseRouting() and MapControllerRoute()
-app.UseAuthentication(); // Must be before UseAuthorization
+// Enable Authentication middleware
+app.UseAuthentication();
+// Enable Authorization middleware
 app.UseAuthorization();
-// --- End Authentication and Authorization Middleware ---
 
+// Map controllers to routes
 app.MapControllerRoute(
     name: "default",
-    // Change the default controller and action to point to your Login page
-    pattern: "{controller=Account}/{action=Login}/{id?}"); // Changed default route
+    pattern: "{controller=Account}/{action=Login}/{id?}"); // Changed default route to Account/Login
 
 app.Run();
 

@@ -26,6 +26,7 @@ namespace Health_Insurance.Data // Ensure this namespace is correct for your Dat
         // --- Add DbSets for Authentication Models ---
         public DbSet<Admin> Admins { get; set; }
         // --- End DbSets for Authentication Models ---
+        public DbSet<HR> HRs { get; set; }
 
 
         // Optional: Configure model properties using the Fluent API

@@ -1,31 +1,27 @@
 ﻿// Controllers/AccountController.cs
-using Health_Insurance.Models; // Ensure this namespace is correct for LoginViewModel, Employee, Admin
-using Health_Insurance.Services; // Ensure this namespace is correct for IUserService
+using Health_Insurance.Models;
+using Health_Insurance.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using System.Security.Claims; // Needed for ClaimsIdentity, ClaimsPrincipal
-using Microsoft.AspNetCore.Authentication; // Needed for SignInAsync, SignOutAsync
-using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults
-using System.Collections.Generic; // Needed for List<Claim>
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Collections.Generic;
 
-namespace Health_Insurance.Controllers // Ensure this namespace is correct
+namespace Health_Insurance.Controllers
 {
-    // Controller to handle user authentication (login, logout, access denied)
     public class AccountController : Controller
     {
-        private readonly IUserService _userService; // Inject the UserService
+        private readonly IUserService _userService;
 
-        // Constructor: Inject the UserService
         public AccountController(IUserService userService)
         {
             _userService = userService;
         }
 
         // GET: /Account/Login
-        // Displays the login page.
         public IActionResult Login()
         {
-            // If a user is already authenticated, redirect them to their respective dashboard
             if (User.Identity.IsAuthenticated)
             {
                 if (User.IsInRole("Admin"))
@@ -34,80 +30,84 @@ namespace Health_Insurance.Controllers // Ensure this namespace is correct
                 }
                 else if (User.IsInRole("Employee"))
                 {
-                    // Get the EmployeeId from the claims to redirect to their specific enrolled policies
                     var employeeIdClaim = User.FindFirst("EmployeeId");
                     if (employeeIdClaim != null && int.TryParse(employeeIdClaim.Value, out int employeeId))
                     {
                         return RedirectToAction("EnrolledPolicies", "Enrollment", new { employeeId = employeeId });
                     }
-                    // Fallback if employeeId claim is missing for some reason
                     return RedirectToAction("Index", "Home");
                 }
-                // Fallback for authenticated users without specific roles
-                return RedirectToAction("Index", "Home");
+                // --- NEW: Redirect HR users ---
+                else if (User.IsInRole("HR"))
+                {
+                    // HR personnel might also manage employees, so redirect them to Employee/Index
+                    return RedirectToAction("Index", "Employee");
+                }
+                // --- END NEW ---
+                return RedirectToAction("Index", "Home"); // Fallback
             }
             return View();
         }
 
         // POST: /Account/Login
-        // Handles the login form submission.
         [HttpPost]
-        [ValidateAntiForgeryToken] // Protects against CSRF attacks
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            // Check if the submitted model is valid based on data annotations
             if (!ModelState.IsValid)
             {
-                return View(model); // Return the view with validation errors
+                return View(model);
             }
 
-            // Authenticate user using the UserService, passing the LoginType
-            var user = await _userService.AuthenticateUserAsync(model.Username, model.Password, model.LoginType); // Pass model.LoginType here
+            var user = await _userService.AuthenticateUserAsync(model.Username, model.Password, model.LoginType);
 
             if (user == null)
             {
-                // Authentication failed (either credentials incorrect or user type mismatch)
                 ModelState.AddModelError(string.Empty, "Invalid username or password, or incorrect login type selected.");
-                return View(model); // Return the view with an error message
+                return View(model);
             }
 
-            // Determine user role and create claims
             var claims = new List<System.Security.Claims.Claim>
             {
-                new System.Security.Claims.Claim(ClaimTypes.Name, model.Username), // Store username
+                new System.Security.Claims.Claim(ClaimTypes.Name, model.Username),
             };
 
             string userRole = string.Empty;
-            int userId = 0; // To store AdminId or EmployeeId
+            int userId = 0; // To store AdminId, EmployeeId, or HRId
 
             if (user is Admin adminUser)
             {
-                claims.Add(new System.Security.Claims.Claim(ClaimTypes.Role, "Admin")); // Add Admin role claim
-                claims.Add(new System.Security.Claims.Claim("AdminId", adminUser.AdminId.ToString())); // Custom claim for AdminId
+                claims.Add(new System.Security.Claims.Claim(ClaimTypes.Role, "Admin"));
+                claims.Add(new System.Security.Claims.Claim("AdminId", adminUser.AdminId.ToString()));
                 userRole = "Admin";
                 userId = adminUser.AdminId;
             }
             else if (user is Employee employeeUser)
             {
-                claims.Add(new System.Security.Claims.Claim(ClaimTypes.Role, "Employee")); // Add Employee role claim
-                claims.Add(new System.Security.Claims.Claim("EmployeeId", employeeUser.EmployeeId.ToString())); // Custom claim for EmployeeId
+                claims.Add(new System.Security.Claims.Claim(ClaimTypes.Role, "Employee"));
+                claims.Add(new System.Security.Claims.Claim("EmployeeId", employeeUser.EmployeeId.ToString()));
                 userRole = "Employee";
                 userId = employeeUser.EmployeeId;
             }
+            // --- NEW: Handle HR claims and role ---
+            else if (user is HR hrUser)
+            {
+                claims.Add(new System.Security.Claims.Claim(ClaimTypes.Role, "HR"));
+                claims.Add(new System.Security.Claims.Claim("HRId", hrUser.HRId.ToString())); // Custom claim for HRId
+                userRole = "HR";
+                userId = hrUser.HRId;
+            }
+            // --- END NEW ---
 
-            // Create ClaimsIdentity and ClaimsPrincipal
             var claimsIdentity = new ClaimsIdentity(
                 claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             var authProperties = new AuthenticationProperties
             {
-                // Allow refreshing the authentication session cookie
                 AllowRefresh = true,
-                // IsPersistent = model.RememberMe, // Use if you implement "Remember Me"
-                ExpiresUtc = System.DateTimeOffset.UtcNow.AddMinutes(30) // Set cookie expiration
+                ExpiresUtc = System.DateTimeOffset.UtcNow.AddMinutes(30)
             };
 
-            // Sign in the user
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
@@ -116,32 +116,33 @@ namespace Health_Insurance.Controllers // Ensure this namespace is correct
             // Redirect based on role after successful login
             if (userRole == "Admin")
             {
-                return RedirectToAction("Index", "Employee"); // Admin goes to Employee management
+                return RedirectToAction("Index", "Employee");
             }
             else if (userRole == "Employee")
             {
-                // Employee goes to their enrolled policies
                 return RedirectToAction("EnrolledPolicies", "Enrollment", new { employeeId = userId });
             }
-
-            // Fallback redirect for unexpected scenarios
-            return RedirectToAction("Index", "Home");
+            // --- NEW: Redirect HR personnel after login ---
+            else if (userRole == "HR")
+            {
+                return RedirectToAction("Index", "Employee"); // HR also goes to Employee management initially
+            }
+            // --- END NEW ---
+            return RedirectToAction("Index", "Home"); // Fallback redirect
         }
 
         // GET: /Account/Logout
-        // Handles user logout.
         [HttpGet]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login", "Account"); // Redirect to login page after logout
+            return RedirectToAction("Login", "Account");
         }
 
         // GET: /Account/AccessDenied
-        // Displays a message when a user tries to access a restricted resource.
         public IActionResult AccessDenied()
         {
-            return View(); // You will create an AccessDenied.cshtml view
+            return View();
         }
     }
 }

@@ -1,77 +1,74 @@
 ﻿@model Health_Insurance.Models.LoginViewModel
 
 @{
-    ViewData["Title"] = "Login"; // Set the page title
-    Layout = "~/Views/Shared/_Layout.cshtml"; // Specify the layout file to use
+    ViewData["Title"] = "Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-@* Custom CSS for the login page. Removed body styling from here. *@
 <style>
-    /* Removed body styling from here to prevent conflict with _Layout.cshtml */
-
     .login-wrapper {
-        /* This wrapper will take up the full height of the main content area */
-        /* and center its child (the login-container) */
-        min-height: calc(100vh - 120px); /* Adjust 120px based on actual header/footer height if needed */
+        min-height: calc(100vh - 120px);
         display: flex;
         justify-content: center;
         align-items: center;
-        /* Apply the gradient background to this wrapper */
         background: linear-gradient(to right, #6a11cb, #2575fc);
-        margin: -20px; /* Adjust to remove padding from main container if necessary */
-        padding: 20px; /* Add back padding if margin is negative */
+        margin: -20px;
+        padding: 20px;
     }
 
     .login-container {
-        background-color: #ffffff; /* White background for the login card */
+        background-color: #ffffff;
         padding: 40px;
-        border-radius: 15px; /* Rounded corners */
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         width: 100%;
-        max-width: 450px; /* Max width for the login card */
+        max-width: 450px;
     }
-    .login-container h2 {
-        margin-bottom: 30px;
-        text-align: center;
-        color: #333;
-    }
+
+        .login-container h2 {
+            margin-bottom: 30px;
+            text-align: center;
+            color: #333;
+        }
+
     .form-control {
-        border-radius: 8px; /* Rounded form inputs */
+        border-radius: 8px;
     }
+
     .btn-login {
-        border-radius: 8px; /* Rounded buttons */
+        border-radius: 8px;
         padding: 10px 20px;
         font-size: 1.1rem;
-        width: 100%; /* Full width button */
+        width: 100%;
     }
+
     .nav-tabs .nav-link {
-        color: #495057; /* Default tab text color */
+        color: #495057;
         border: none;
         border-bottom: 2px solid transparent;
-        margin-bottom: -1px; /* Adjust to align with border */
+        margin-bottom: -1px;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
     }
-    .nav-tabs .nav-link.active {
-        color: #007bff; /* Active tab text color (Bootstrap primary blue) */
-        border-bottom-color: #007bff; /* Active tab underline color */
-        font-weight: 600;
-    }
+
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            font-weight: 600;
+        }
+
     .tab-content {
         padding-top: 20px;
     }
 </style>
 
-@* New wrapper div to control the background and centering of the login card *@
 <div class="login-wrapper">
-    @* The main content of the login page *@
     <div class="login-container">
         <h2>Health Insurance System Login</h2>
 
-        @* Validation Summary to display login errors from the controller *@
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <!-- Tabs for Admin and Employee Login -->
+        <!-- Tabs for Admin, Employee, and HR Login -->
         <ul class="nav nav-tabs" id="loginTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="admin-tab" data-bs-toggle="tab" data-bs-target="#adminLogin" type="button" role="tab" aria-controls="adminLogin" aria-selected="true">Admin Login</button>
@@ -79,27 +76,27 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="employee-tab" data-bs-toggle="tab" data-bs-target="#employeeLogin" type="button" role="tab" aria-controls="employeeLogin" aria-selected="false">Employee Login</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hr-tab" data-bs-toggle="tab" data-bs-target="#hrLogin" type="button" role="tab" aria-controls="hrLogin" aria-selected="false">HR Login</button> @* NEW HR TAB *@
+            </li>
         </ul>
 
         <!-- Tab Content -->
         <div class="tab-content" id="loginTabsContent">
             <!-- Admin Login Form -->
             <div class="tab-pane fade show active" id="adminLogin" role="tabpanel" aria-labelledby="admin-tab">
-                @* Use asp-action and asp-controller to target the POST Login action *@
                 <form asp-action="Login" asp-controller="Account" method="post">
-                     @* Include the Anti-Forgery Token *@
-                     @Html.AntiForgeryToken()
+                    @Html.AntiForgeryToken()
                     <div class="mb-3">
-                        <label asp-for="Username" class="form-label"></label> @* Use asp-for for Username *@
-                        <input asp-for="Username" class="form-control" placeholder="Enter Admin Username"> @* Use asp-for for Username *@
+                        <label asp-for="Username" class="form-label"></label>
+                        <input asp-for="Username" class="form-control" placeholder="Enter Admin Username">
                         <span asp-validation-for="Username" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label"></label> @* Use asp-for for Password *@
-                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter Admin Password"> @* Use asp-for for Password, type="password" *@
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter Admin Password">
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
-                    @* Hidden field to specify login type for Admin *@
                     <input type="hidden" asp-for="LoginType" value="Admin" />
                     <button type="submit" class="btn btn-primary btn-login">Login as Admin</button>
                 </form>
@@ -107,40 +104,56 @@
 
             <!-- Employee Login Form -->
             <div class="tab-pane fade" id="employeeLogin" role="tabpanel" aria-labelledby="employee-tab">
-                 @* Use asp-action and asp-controller to target the POST Login action *@
-                 <form asp-action="Login" asp-controller="Account" method="post">
-                     @* Include the Anti-Forgery Token *@
-                     @Html.AntiForgeryToken()
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
                     <div class="mb-3">
-                        <label asp-for="Username" class="form-label"></label> @* Use asp-for for Username *@
-                        <input asp-for="Username" class="form-control" placeholder="Enter Employee Username"> @* Use asp-for for Username *@
+                        <label asp-for="Username" class="form-label"></label>
+                        <input asp-for="Username" class="form-control" placeholder="Enter Employee Username">
                         <span asp-validation-for="Username" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label"></label> @* Use asp-for for Password *@
-                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter Employee Password"> @* Use asp-for for Password, type="password" *@
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter Employee Password">
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
-                    @* Hidden field to specify login type for Employee *@
                     <input type="hidden" asp-for="LoginType" value="Employee" />
                     <button type="submit" class="btn btn-success btn-login">Login as Employee</button>
                 </form>
             </div>
+
+            <!-- HR Login Form (NEW) -->
+            <div class="tab-pane fade" id="hrLogin" role="tabpanel" aria-labelledby="hr-tab">
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label"></label>
+                        <input asp-for="Username" class="form-control" placeholder="Enter HR Username">
+                        <span asp-validation-for="Username" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter HR Password">
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <input type="hidden" asp-for="LoginType" value="HR" /> @* NEW LoginType for HR *@
+                    <button type="submit" class="btn btn-info btn-login">Login as HR</button> @* btn-info for HR *@
+                </form>
+            </div>
         </div>
     </div>
-</div> @* Close login-wrapper *@
+</div>
 
 @section Scripts {
-    @* Explicitly include jQuery and Bootstrap JS here to ensure they are loaded before any scripts that depend on them. *@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 
     <script>
         $(document).ready(function() {
-            // Any custom jQuery for this page would go here.
-            // The Bootstrap tab functionality is handled by bootstrap.bundle.min.js loaded in _Layout.cshtml.
+            // No additional JS needed for tabs, Bootstrap handles it.
         });
     </script>
 }

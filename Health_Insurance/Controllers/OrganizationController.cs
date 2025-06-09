@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Authorization; // Add this using statement
 
 namespace Health_Insurance.Controllers
 {
-    // Restrict all actions in this controller to users with the "Admin" role.
-    [Authorize(Roles = "Admin")]
+    // Restrict all actions in this controller to users with the "Admin" or "HR" role.
+    [Authorize(Roles = "Admin,HR")] // --- MODIFIED: Added "HR" role ---
     public class OrganizationController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -53,7 +53,7 @@ namespace Health_Insurance.Controllers
         // POST: Organizations/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("OrganizationId,OrganizationName,ContactPerson,ContactEmail")] Organization organization)
+        public async Task<IActionResult> Create([Bind("OrganizationId,OrganizationName,ContactPerson,PhoneNumber,EmailAddress")] Organization organization)
         {
             if (ModelState.IsValid)
             {
@@ -83,7 +83,7 @@ namespace Health_Insurance.Controllers
         // POST: Organizations/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("OrganizationId,OrganizationName,ContactPerson,ContactEmail")] Organization organization)
+        public async Task<IActionResult> Edit(int id, [Bind("OrganizationId,OrganizationName,ContactPerson,PhoneNumber,EmailAddress")] Organization organization)
         {
             if (id != organization.OrganizationId)
             {
