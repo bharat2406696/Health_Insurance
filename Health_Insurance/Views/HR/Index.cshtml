@@ -1,0 +1,40 @@
+﻿@model IEnumerable<Health_Insurance.Models.HR>
+@* Ensure the model namespace is correct based on your project name *@
+
+@{
+    ViewData["Title"] = "HR Personnel";
+}
+
+<h1 class="mb-4">HR Personnel</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New HR Personnel</a>
+</p>
+
+<table class="table table-striped table-hover mt-4">
+    <thead class="table-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            <th>@Html.DisplayNameFor(model => model.Email)</th>
+            <th>@Html.DisplayNameFor(model => model.Phone)</th>
+            <th>@Html.DisplayNameFor(model => model.Username)</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                <td>@Html.DisplayFor(modelItem => item.Phone)</td>
+                <td>@Html.DisplayFor(modelItem => item.Username)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.HRId" class="btn btn-sm btn-info me-1">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.HRId" class="btn btn-sm btn-secondary me-1">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.HRId" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

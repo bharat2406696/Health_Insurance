@@ -27,22 +27,25 @@
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Employees (Admin)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Employees</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Organization" asp-action="Index">Organizations (Admin)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Organization" asp-action="Index">Organizations</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Policies" asp-action="Index">Policies (Admin)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Policies" asp-action="Index">Policies</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Enrollment" asp-action="Index">Enrollments (Admin)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Enrollment" asp-action="Index">Enrollments</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Claim" asp-action="ListAllClaims">Claims (Admin)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Claim" asp-action="ListAllClaims">Claims</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="Index">Reports (Admin)</a> @* NEW Report Link for Admin *@
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="Index">Reports</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="HR" asp-action="Index">HR Personnel</a>
                             </li>
                         }
 
@@ -50,27 +53,36 @@
                         @if (User.IsInRole("HR"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Employees (HR)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Employees</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Organization" asp-action="Index">Organizations (HR)</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Organization" asp-action="Index">Organizations</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="Index">Reports (HR)</a> @* NEW Report Link for HR *@
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Report" asp-action="Index">Reports</a>
                             </li>
                         }
 
                         @* Employee Specific Links *@
                         @if (User.IsInRole("Employee"))
                         {
+                            @* REMOVED THE INNER @{ ... } BLOCK HERE *@
+                            // --- NEW LOGIC: Get EmployeeId for "My Enrollments" and "My Claims" links ---
+                            int? employeeId = null;
+                            var employeeIdClaim = User.FindFirst("EmployeeId");
+                            if (employeeIdClaim != null && int.TryParse(employeeIdClaim.Value, out int id))
+                            {
+                                employeeId = id;
+                            }
+                            // --- END NEW LOGIC ---
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Enrollment" asp-action="EnrolledPolicies">My Enrollments</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Enrollment" asp-action="EnrolledPolicies" asp-route-employeeId="@employeeId">My Enrollments</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Claim" asp-action="SubmitClaim">Submit Claim</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Claim" asp-action="ListAllClaims">My Claims</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Claim" asp-action="ListAllClaims" asp-route-employeeId="@employeeId">My Claims</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Enrollment" asp-action="Index">View Available Policies</a>
@@ -120,7 +132,3 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-
-
-
-

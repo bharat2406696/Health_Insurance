@@ -1,47 +1,40 @@
 ﻿@model IEnumerable<Health_Insurance.Models.Organization>
+@* Ensure the model namespace is correct based on your project name *@
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Organizations";
 }
 
-<h1>Index</h1>
+<h1 class="mb-4">Organizations</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">Create New Organization</a>
 </p>
-<table class="table">
-    <thead>
+
+<table class="table table-striped table-hover mt-4">
+    <thead class="table-dark">
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.OrganizationName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ContactPerson)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ContactEmail)
-            </th>
-            <th></th>
+            <th>@Html.DisplayNameFor(model => model.OrganizationName)</th>
+            <th>@Html.DisplayNameFor(model => model.ContactPerson)</th>
+            @* --- REMOVED PhoneNumber column --- *@
+            <th>@Html.DisplayNameFor(model => model.ContactEmail)</th> @* --- RENAMED Header --- *@
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrganizationName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ContactPerson)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ContactEmail)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.OrganizationId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.OrganizationId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.OrganizationId">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.OrganizationName)</td>
+                <td>@Html.DisplayFor(modelItem => item.ContactPerson)</td>
+                @* --- REMOVED PhoneNumber display --- *@
+                <td>@Html.DisplayFor(modelItem => item.ContactEmail)</td> @* --- RENAMED Display --- *@
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.OrganizationId" class="btn btn-sm btn-info me-1">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.OrganizationId" class="btn btn-sm btn-secondary me-1">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.OrganizationId" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

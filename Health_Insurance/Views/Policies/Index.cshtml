@@ -1,53 +1,43 @@
 ﻿@model IEnumerable<Health_Insurance.Models.Policy>
+@* Ensure the model namespace is correct based on your project name *@
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Policies";
 }
 
-<h1>Index</h1>
+<h1 class="mb-4">Policies</h1> @* Added mb-4 for margin-bottom *@
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">Create New Policy</a> @* Styled as primary button *@
 </p>
-<table class="table">
-    <thead>
+
+<table class="table table-striped table-hover mt-4">
+    @* Added striped, hover, and mt-4 for margin-top *@
+    <thead class="table-dark">
+        @* Added table-dark for dark header *@
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.PolicyName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CoverageAmount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PremiumAmount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PolicyType)
-            </th>
-            <th></th>
+            <th>@Html.DisplayNameFor(model => model.PolicyName)</th>
+            <th>@Html.DisplayNameFor(model => model.CoverageAmount)</th>
+            <th>@Html.DisplayNameFor(model => model.PremiumAmount)</th>
+            <th>@Html.DisplayNameFor(model => model.PolicyType)</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.PolicyName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CoverageAmount)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PremiumAmount)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PolicyType)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.PolicyId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.PolicyId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.PolicyId">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.PolicyName)</td>
+                <td>@Html.DisplayFor(modelItem => item.CoverageAmount)</td>
+                <td>@Html.DisplayFor(modelItem => item.PremiumAmount)</td>
+                <td>@Html.DisplayFor(modelItem => item.PolicyType)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.PolicyId" class="btn btn-sm btn-info me-1">Edit</a> @* Styled as info button with margin *@
+                    <a asp-action="Details" asp-route-id="@item.PolicyId" class="btn btn-sm btn-secondary me-1">Details</a> @* Styled as secondary button with margin *@
+                    <a asp-action="Delete" asp-route-id="@item.PolicyId" class="btn btn-sm btn-danger">Delete</a> @* Styled as danger button *@
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+

@@ -1,0 +1,34 @@
+﻿@model Health_Insurance.Models.HR
+@* Ensure the model namespace is correct based on your project name *@
+
+@{
+    ViewData["Title"] = "Delete HR Personnel";
+}
+
+<h1 class="mb-4">Delete HR Personnel</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>HR Personnel</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Phone)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Phone)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Username)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Username)</dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="HRId" />
+        <input type="submit" value="Delete" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+    </form>
+</div>
+

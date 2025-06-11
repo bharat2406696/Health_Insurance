@@ -3,23 +3,24 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Mvc.ModelBinding; // Required for [BindNever]
 
-namespace Health_Insurance.Models // Ensure this namespace is correct based on your project name
+namespace Health_Insurance.Models
 {
-    // Represents an Employee entity, mapping to the Employee table in the database.
     public class Employee
     {
-        [Key] // Specifies this property is the primary key
+        [Key]
         public int EmployeeId { get; set; }
 
-        [Required] // Specifies that this property is required
-        [StringLength(100)] // Specifies the maximum length of the string
+        [Required(ErrorMessage = "Name is required.")]
+        [StringLength(100)]
+        [RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Name can only contain alphabets and spaces.")] // NEW VALIDATION
         public string Name { get; set; }
 
         [StringLength(100)]
-        [EmailAddress] // Provides validation for email format
+        [EmailAddress(ErrorMessage = "Invalid Email Address.")]
         public string Email { get; set; }
 
         [StringLength(15)]
+        [RegularExpression(@"^[0-9]+$", ErrorMessage = "Phone number can only contain numbers.")] // NEW VALIDATION
         public string Phone { get; set; }
 
         public string Address { get; set; }
@@ -27,27 +28,19 @@ namespace Health_Insurance.Models // Ensure this namespace is correct based on y
         [StringLength(50)]
         public string Designation { get; set; }
 
-        // Foreign Key to the Organization table
-        [Required(ErrorMessage = "Organization is required.")] // Ensure this is present
+        [Required(ErrorMessage = "Organization is required.")]
         public int OrganizationId { get; set; }
 
-        // Navigation property to the related Organization
-        [ForeignKey("OrganizationId")] // Specifies the foreign key property
-        [BindNever] // ADD THIS ATTRIBUTE! Tells model binder to ignore this property from form data
+        [ForeignKey("OrganizationId")]
+        [BindNever]
         public virtual Organization? Organization { get; set; }
 
-        // --- Authentication Fields for Employee Login ---
-        [Required(ErrorMessage = "Username is required.")] // Username is still required
+        [Required(ErrorMessage = "Username is required.")]
         [StringLength(50)]
         public string Username { get; set; }
 
-        // Password hash. Not [Required] on the model, but handled for initial creation in controller.
         [StringLength(256)]
         public string PasswordHash { get; set; }
-        // --- End Authentication Fields ---
-
-        // Navigation property for Enrollments (if needed later)
-        // public virtual ICollection<Enrollment> Enrollments { get; set; }
     }
 }
 
