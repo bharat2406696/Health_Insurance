@@ -31,7 +31,8 @@ namespace Health_Insurance.Models
         public string ContactEmail { get; set; } // Renamed from EmailAddress
 
         // Navigation property for employees in this organization
-        public virtual ICollection<Employee> Employees { get; set; }
+        
+        public virtual ICollection<Employee>? Employees { get; set; }
     }
 }
 

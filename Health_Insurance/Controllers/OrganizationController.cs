@@ -54,7 +54,7 @@ namespace Health_Insurance.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         // --- MODIFIED: Removed PhoneNumber, changed EmailAddress to ContactEmail ---
-        public async Task<IActionResult> Create([Bind("OrganizationId,OrganizationName,ContactPerson,ContactEmail")] Organization organization)
+        public async Task<IActionResult> Create([Bind("OrganizationId, OrganizationName,ContactPerson,ContactEmail")] Organization organization)
         {
             if (ModelState.IsValid)
             {
